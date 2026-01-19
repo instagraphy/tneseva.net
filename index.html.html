@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TN ESEVA PORTAL - All-in-One Tools</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        /* Base Styles */
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
+        .no-print { max-width: 800px; margin: 0 auto; }
+        
+        /* Header & Sidebar */
+        .header { display: flex; align-items: center; background: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
+        .menu-btn { font-size: 24px; background: none; border: none; cursor: pointer; color: #2563eb; margin-right: 10px; padding: 5px; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 1000; }
+        .overlay.active { display: block; }
+        .sidebar { position: fixed; top: 0; left: -100%; width: 320px; height: 100%; background: white; z-index: 1001; transition: 0.3s; padding: 20px; box-sizing: border-box; overflow-y: auto; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        .sidebar.active { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .close-btn { border: none; background: none; font-size: 24px; cursor: pointer; color: #333; }
+
+        /* Search & Lists */
+        .search-container { margin-bottom: 15px; }
+        .search-box { width: 100%; padding: 15px; border: 2px solid #2563eb; border-radius: 10px; font-size: 16px; outline: none; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .cat-group { background: white; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+        .cat-head { width: 100%; padding: 18px; text-align: left; background: white; border: none; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #1e40af; }
+        .cat-content { display: none; }
+        .cat-content.active { display: block; }
+        .item-row { padding: 15px; border-top: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
+        .item-info { flex: 1; padding-right: 10px; }
+        .item-name { font-weight: 600; font-size: 14px; display: block; }
+        .btn-group { display: flex; gap: 8px; }
+        .btn { padding: 8px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; color: white; min-width: 70px; }
+        .btn-p { background: #1d4ed8; }
+        .btn-s { background: #16a34a; }
+        .count-badge { background: #eef2ff; padding: 4px 12px; border-radius: 15px; font-weight: bold; color: #1e40af; font-size: 14px; }
+
+        /* Tools Styling */
+        .tool-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 20px; }
+        .tool-header { font-weight: 700; color: #1e40af; font-size: 14px; margin-bottom: 12px; display: block; text-transform: uppercase; }
+        .upload-btn { display: block; padding: 15px; border: 2px dashed #3b82f6; border-radius: 10px; text-align: center; color: #3b82f6; cursor: pointer; font-size: 13px; font-weight: 600; background: #eff6ff; margin-bottom: 10px; transition: 0.2s; }
+        .upload-btn:hover { background: #dbeafe; }
+        .img-wrap { border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; background: #ffffff; position: relative; min-height: 100px; margin-bottom: 10px; }
+        .img-wrap img, #signCanvas, #cropCanvas, #idCanvas { width: 100%; height: auto; display: block; background: #fff; }
+        .img-wrap canvas { display: block; margin: 0 auto; }
+        .lbl { position: absolute; top: 0; left: 0; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; padding: 2px 6px; z-index: 5; }
+        .conv-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .b-save { padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; color: white; transition: 0.2s; }
+        .b-save:hover { opacity: 0.9; transform: translateY(-1px); }
+        .b-jpg { background: #2563eb; }
+        .b-pdf { background: #059669; }
+        .ocr-textarea { width: 100%; height: 120px; border: 1px solid #ccc; padding: 8px; border-radius: 5px; margin: 10px 0; font-size: 13px; resize: vertical; }
+        
+        /* Compression tool specific */
+        .pg-ctrl { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; font-weight: bold; border: 1px solid #e2e8f0; }
+        .pg-btn { padding: 5px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .preview-pane { display: flex; flex-direction: column; gap: 12px; margin: 15px 0; }
+        
+        /* Toast notification */
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #059669; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s; animation-fill-mode: forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        
+        @media print { .no-print { display: none !important; } #printArea { display: block !important; } }
+        #printArea { display: none; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <!-- Header -->
+        <div class="header">
+            <button class="menu-btn" onclick="toggleSidebar(true)">☰</button>
+            <h3 style="margin:0; color:#2563eb; flex-grow:1;">TN ESEVA PORTAL</h3>
+            <div class="count-badge" id="serviceCount">Loading...</div>
+        </div>
+
+        <!-- Overlay -->
+        <div class="overlay" id="overlay" onclick="toggleSidebar(false)"></div>
+
+        <!-- Sidebar with tools -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3 style="margin:0;">SHOP TOOLS</h3>
+                <button class="close-btn" onclick="toggleSidebar(false)">✕</button>
+            </div>
+
+            <!-- Aadhaar / ID Card Dual Tool -->
+            <div class="tool-card">
+                <span class="tool-header">Aadhaar / ID Card Dual Tool</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                    <label class="upload-btn" style="padding:10px; font-size:11px; background:#f0f9ff;" onclick="document.getElementById('idFrontIn').click()">UPLOAD FRONT</label>
+                    <label class="upload-btn" style="padding:10px; font-size:11px; background:#f0f9ff;" onclick="document.getElementById('idBackIn').click()">UPLOAD BACK</label>
+                </div>
+                <input type="file" id="idFrontIn" accept="image/*,application/pdf" hidden onchange="initIDTool(event, 'front')">
+                <input type="file" id="idBackIn" accept="image/*,application/pdf" hidden onchange="initIDTool(event, 'back')">
+
+                <div id="idUI" style="display:none;">
+                    <div class="img-wrap" style="cursor: crosshair; touch-action: none;">
+                        <canvas id="idCanvas"></canvas>
+                        <div id="idLabel" class="lbl" style="background:#2563eb;">Front Side</div>
+                    </div>
+                    
+                    <div id="idStatus" style="font-size: 11px; margin-bottom: 10px; color: #444; text-align: center; border: 1px solid #eee; padding: 5px; border-radius: 5px;">
+                        <span id="sFront">Front: ❌ Missing</span> | <span id="sBack">Back: ❌ Missing</span>
+                    </div>
+
+                    <div class="conv-btns" id="idActionBtns">
+                        <button class="b-save b-jpg" onclick="saveIDSide()">SAVE SIDE</button>
+                        <button class="b-save" style="background:#64748b;" onclick="resetIDTool()">RESET ALL</button>
+                    </div>
+
+                    <div id="idFinalBtns" style="display:none; margin-top:10px; flex-direction: column; gap: 8px;">
+                        <button class="b-save" style="background:#ff9900; width:100%" onclick="combineID('6x4')">COMBINE TO 6x4 PHOTO</button>
+                        <button class="b-save" style="background:#2563eb; width:100%" onclick="combineID('A4')">COMBINE TO A4 PAGE</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Cropper -->
+            <div class="tool-card">
+                <span class="tool-header">Image Cropper (Any Size)</span>
+                <label class="upload-btn" style="background:#fefce8; color:#854d0e; border-color:#eab308;" onclick="document.getElementById('cropIn').click()">SELECT IMAGE TO CROP</label>
+                <input type="file" id="cropIn" accept="image/*" hidden onchange="initCropTool(event)">
+                <div id="cropUI" style="display:none;">
+                    <div class="img-wrap" style="cursor: crosshair; touch-action: none;">
+                        <canvas id="cropCanvas"></canvas>
+                    </div>
+                    <div class="conv-btns">
+                        <button class="b-save b-jpg" onclick="downloadCrop()">SAVE CROP</button>
+                        <button class="b-save" style="background:#64748b;" onclick="resetCrop()">RESET</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signature Cropper -->
+            <div class="tool-card">
+                <span class="tool-header">Signature Cropper</span>
+                <label class="upload-btn" style="background:#fff7ed; color:#c2410c; border-color:#c2410c;" onclick="document.getElementById('signIn').click()">SELECT SIGNATURE IMAGE</label>
+                <input type="file" id="signIn" accept="image/*" hidden onchange="initSignTool(event)">
+                <div id="signUI" style="display:none;">
+                    <div class="img-wrap" style="cursor: crosshair; touch-action: none;">
+                        <canvas id="signCanvas"></canvas>
+                    </div>
+                    <div class="conv-btns">
+                        <button class="b-save b-jpg" onclick="downloadSign()">SAVE SIGN</button>
+                        <button class="b-save" style="background:#64748b;" onclick="resetSign()">RESET</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compress & Convert -->
+            <div class="tool-card">
+                <span class="tool-header">Compress & Convert</span>
+                <label class="upload-btn" onclick="document.getElementById('compFileIn').click()">CHOOSE PDF / IMAGE</label>
+                <input type="file" id="compFileIn" accept="image/*,application/pdf" hidden onchange="initCompTool(event)">
+                <div id="compUI" style="display:none;">
+                    <div id="compPgCtrl" class="pg-ctrl" style="display:none;">
+                        <button class="pg-btn" onclick="changeCompPage(-1)">←</button>
+                        <span>Page <span id="compPgCur">1</span> of <span id="compPgTotal">1</span></span>
+                        <button class="pg-btn" onclick="changeCompPage(1)">→</button>
+                    </div>
+                    
+                    <div class="preview-pane">
+                        <div class="img-wrap">
+                            <span class="lbl">ORIGINAL</span>
+                            <img id="viewOrig" alt="Original preview">
+                        </div>
+                        <div class="img-wrap" style="border-color:#16a34a;">
+                            <span class="lbl" style="background:#16a34a;">PREVIEW</span>
+                            <img id="viewNew" alt="Compressed preview">
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; margin: 10px 0;">
+                        <span>Size: <span id="szNew">0 KB</span></span>
+                        <span>Quality: <span id="qualityValue">60</span>%</span>
+                    </div>
+                    
+                    <input type="range" id="quality" min="5" max="95" value="60" style="width:100%" oninput="updateQualityValue(); updateCompression()">
+                    
+                    <div class="conv-btns">
+                        <button class="b-save b-jpg" onclick="downloadJPG()">SAVE JPG</button>
+                        <button class="b-save b-pdf" onclick="downloadPDF()">SAVE PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OCR Scanner -->
+            <div class="tool-card">
+                <span class="tool-header">Tamil/Eng Scanner</span>
+                <label class="upload-btn" style="background:#f0fdf4; color:#16a34a; border-color:#16a34a;" onclick="document.getElementById('ocrIn').click()">SCAN DOCUMENT</label>
+                <input type="file" id="ocrIn" accept="image/*" hidden onchange="initOCRTool(event)">
+                <div id="ocrUI" style="display:none;">
+                    <div id="ocrStat" style="color:blue; font-weight:bold; margin: 10px 0;"></div>
+                    <textarea id="ocrBox" class="ocr-textarea" placeholder="Extracted text will appear here..."></textarea>
+                    <button class="b-save" style="width:100%; background:#2563eb;" onclick="copyOCRText()">COPY TEXT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-container">
+            <input type="text" class="search-box" id="search" placeholder="🔍 Type service name (e.g., PAN, Ration, License)..." oninput="smartSearch()" autocomplete="off">
+        </div>
+
+        <!-- Services List -->
+        <div id="listBody"></div>
+    </div>
+
+    <!-- Hidden canvases -->
+    <canvas id="compCanvas" style="display:none;"></canvas>
+    <canvas id="ocrCanvas" style="display:none;"></canvas>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <!-- Print Area -->
+    <div id="printArea">
+        <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px;">
+            <h1 style="margin:0;">TN ESEVA</h1>
+            <p style="margin:5px 0;">Digital Service & Online Consultant</p>
+            <strong>Phone: 8300181980</strong>
+        </div>
+        <div style="margin-top:20px;">
+            <h3>SERVICE: <span id="pName"></span></h3>
+            <h4>REQUIRED DOCUMENTS:</h4>
+            <ul id="pDocs" style="font-size: 18px; line-height: 1.6;"></ul>
+        </div>
+    </div>
+
+    <script>
+        // ===== 1. SERVICE DATABASE =====
+        const serviceDatabase = [
+            {
+                category: "TN GOVT CERTIFICATES",
+                items: [
+                    { n: "COMMUNITY", d: "Student Photo, Student Aadhaar, Smart Card, Father/Mother/Sibling TC or School Bonafide, &JK Form with Sign" },
+                    { n: "INCOME CERTIFICATE", d: "Father Photo, Aadhaar, Smart Card, &JK Form with Sign" },
+                    { n: "NATIVITY CERTIFICATE", d: "Photo, Aadhaar, Smart card, Birth Certificate, &JK Form with Sign" },
+                    { n: "RESIDENCE CERTIFICATE", d: "Photo, Aadhaar, Smart card, Birth Certificate, Phone Number, &JK Form with Sign" },
+                    { n: "OBC CERTIFICATE", d: "Photo, Aadhaar, Smart Card, Income Certificate, Community Certificate, &JK form with Sign" },
+                    { n: "FIRST GRADUATE CERTIFICATE", d: "Photo, Aadhaar, TC, 10, 11, 12 MARKSHEET, UDAN PIRANTHAVARIN BONAFIDE, CERTIFICATE TC, MARKSHEET, PARENTS, GRAND PARENTS CERTIFICATE, College Receipt" },
+                    { n: "Legal Hire Certificate", d: "Aadhaar, Applicant Photo, All varisu aadhaar, Death Certificate, Jamath Letter or mortuary report, Smart Card, Death certificate of decease(If not Affidavit), jk form" },
+                    { n: "UNEMPLOYMENT", d: "Aadhaar, photo, smartcard, School Certificate" },
+                    { n: "PSTM(OFFLINE)", d: "Aadhaar, 8th, 10th, 12th certificate, bonafide" },
+                    { n: "DESERTED WOMEN", d: "Aadhaar, SmartCard, Photo" },
+                    { n: "WIDOW CERTIFICATE", d: "Aadhaar, Smartcard, Death Certificate of Husband, Marriage Certificate or any proof for Marriage, Photo, jk form" },
+                    { n: "NO MALE CHILD CERTIFICATE", d: "Aadhaar, SmartCard, Photo" },
+                    { n: "INTERCASTE CERTIFICATE", d: "Aadhaar, SmartCard, Photo, Community Certificate" },
+                    { n: "UNMARRIED CERTIFICATE", d: "Aadhaar, photo, SmartCard" },
+                    { n: "MARRIAGE ASSISTANCE(DISABILITY ONLY)", d: "Aadhaar, SmartCard, Photo, Disability Certificate" },
+                    { n: "SOLVENCY", d: "Aadhaar, SmartCard, Photo, Property Document" },
+                    { n: "ULAMA PENSION", d: "Aadhaar, Photo, SmartCard," },
+                    { n: "WIDOW PENSION", d: "Aadhaar, Photo, Smart Card, Widow Certificate, Husband Death Certificate, Bank Passbook" },
+                    { n: "OLDAGE PENSION", d: "Aadhaar, Photo, Smart Card, Bank Passbook, VoterID, No male Child certificate & No house" },
+                    { n: "SCHEWING MACHINE", d: "Aadhaar, Photo, Smart Card, Toilering Certificate" },
+                    { n: "IRON BOX", d: "Aadhaar, Photo, SmartCard" },
+                    { n: "DIFFERENTLY ABLED", d: "Aadhaar, Photo, Disability Certificate, Signature Or Thumb Impression" },
+                    { n: "FARMER REGISTRATION", d: "Aadhaar, Citta, Adanagal, EC, Sale deed Document" },
+                    { n: "SMALL/MARGINAL FARMER", d: "Aadhaar, Photo, Chitta, Adangal, EC, Saledeed document" },
+                    { n: "ULAVAR PATHUKAPPU THITTAM", d: "Aadhaar, Photo, Smart Card, Adangal, EC, Sale Deed Doc" },
+                    { n: "NOC FIRE", d: " " },
+                    { n: "SAFETY", d: " " },
+                    { n: "DRUG LICENSE", d: " " },
+                    { n: "TRADE LICENCE", d: " " }
+                ]
+            },
+            {
+                category: "TN REGISTRATION",
+                items: [
+                    { n: "EC NORMAL", d: "Property Document Copy(Pathiram)" },
+                    { n: "EC WITH QR", d: "Property Document Copy(Pathiram), Aadhaar" },
+                    { n: "PATHIRAM NAGAL", d: "Property Document Copy(Pathiram), Aadhaar" },
+                    { n: "MARRIAGE REG", d: "Aadhaar(2), SmartCard(2), Photo(2), Birth/TC(2), Invitation(Big), Passport(1)" },
+                    { n: "VALUATION", d: "Pathiram Copy" },
+                    { n: "PATHIRAM REG", d: "MoolaPathiram(Parent Doc)original, Aadhaar(2), Pan(2), Patta, EC, Stamp Paper, Aadhaar Linked Mobile " },
+                    { n: "BIRTH & DEATH NAGAL", d: "Old Certificate Copy or date" },
+                    { n: "E-STAMP", d: "Aadhaar(2), Purpose of E- stamp" },
+                    { n: "PATTA TRANSFER NON SUBDIVISION(KOOTTU)", d: "Original Pathiram(Property document), Aadhaar, OLD PATTA, EC, MOBILE NUMBER, JK FORM" },
+                    { n: "PATTA TRANSFER SUBDIVISIONAL(THANI)", d: "Original Pathiram(Property document), Aadhaar, OLD PATTA, EC, MOBILE NUMBER, JK FORM" },
+                    { n: "FLINE - LAND SURVEY", d: "PATHIRAM, AADHAAR, MOBILE NUMBER, MAIL ID, PARENTS DETAIL, JK FORM" }
+                ]
+            },
+            {
+                category: "TNEB",
+                items: [
+                    { n: "NEW CONNECTION(DOMESTIC)", d: "Sale Deed, Old Patta, Aadhaar, EC" },
+                    { n: "NEW CONNECTION(COMMERCIAL)", d: "Patta Number, Survey Number" },
+                    { n: "TEMPROARY(CONSTRUCTION)", d: "Aadhaar, Photo, Vao Certificate, Udertaking Form(Rs.500), pathiram Doc, patta, jk form" },
+                    { n: "NAME TRANSFER", d: "Aadhaar, " },
+                    { n: "METER SHIFT", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "POST SHIFT", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "ADDITIONAL LOAD", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "REDUCE LOAD", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "SOLAR", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "EB AADHAAR LINK", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "ADDITIONAL METER", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "AGRI CONNECTION", d: "Aadhaar, Photo" },
+                    { n: "PHONE NUMBER CHANGE(OFFLINE)", d: "Aadhaar" },
+                    { n: "NAME CORRECTION(OFFLINE)", d: "Aadhaar" },
+                    { n: "TEMPROARY TO NEW(OFFLINE)", d: " " }
+                ]
+            },
+            {
+                category: "RTO",
+                items: [
+                    { n: "INSURANCE(3RD PARTY)", d: "Sale Deed, Old Patta, Aadhaar, EC" },
+                    { n: "LISENCE NEW", d: "Patta Number, Survey Number" },
+                    { n: "LISENCE RENEW", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "ADDRESS CHANGE", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "BATCH", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "RC NT", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "RC HP CLEARANCE", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "RC RENEWAL", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "ROAD TAX", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "FASTAG NORMAL/MULTY", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "FASTAG COMMERCIAL/HEAVY", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "FASTAG YEARLY", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "PHONE NUMBER CHANGE(OFFLINE)", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "FASTAG KYV)", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "SMOKE TEST", d: "Aadhaar Number, Bank Passbook" }
+                ]
+            },
+            {
+                category: "TNPDS",
+                items: [
+                    { n: "MEMBER ADD", d: "Aadhaar, Marriage Cert/ Birth" },
+                    { n: "MEMBER REMOVE", d: "Aadhaar, Marriage Cert/Death" },
+                    { n: "HEAD CHANGE", d: "Aadhaar Card, Bank Passbook" },
+                    { n: "ADDRESS CHANGE", d: "Aadhaar Card, EB, Property Tax, Rent Agreement" },
+                    { n: "PHOTO CHANGE", d: "Aadhaar Card, Photo, Mobile number" },
+                    { n: "CARD TYPE CHANGE(OFFLINE)", d: "Offline" },
+                    { n: "CORRECTION(OFFLINE)", d: "Offline" },
+                    { n: "NEW RATION APPLY", d: "Aadhaar Card all member, Head Photo, Permanent Phone Number, EB, Property Tax, Rent Agreement, Member Removal certificate" },
+                    { n: "NEW/LOST CARD APPLY", d: "Aadhaar Card, Copy of SmartCard, Mobile Number" },
+                    { n: "PHONE NUMBER CHANGE", d: "Offline" },
+                    { n: "RATION PRATHINITHI", d: "Offline" },
+                    { n: "TO INCREASE/DECREASE COMMODITY", d: "Offline" },
+                ]
+            },
+            {
+                category: "EDUCATION",
+                items: [
+                    { n: "RTE", d: "Aadhaar, Photo, Income, Nativity, Community, Jk form with Sign" },
+                    { n: "PRE MATRIC SCHOLARSHIP", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "POST MATRIC SCHOLARSHIP", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "HDFC SCHOLARSHIP", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "LIC SCHOLARSHIP", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "WAQF SCHOLARSHIP", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "TNPSC EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "UPSC EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "SSC EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "NEET EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "JEE EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "CUET EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "CMC EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "CAT EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "CET EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "TET EXAM", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "CRESCENT APPLICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "JMC APPLICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "SRM APPLICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "LAW APPLICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "COUNCELLING", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "RRB JOB APPLICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "POST OFFICE JOB APPLICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "VAO ASSISTANT JOB APPLICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "TRB JOB APPLICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "EMPLOYMENT REG", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "EMPLOYMENT RENEW", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "EMPLOYMENT MODIFICATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "DGE_CERTIFICATE APPLY", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "DUPLICATE CERTIFICATE APPLY", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "MIGRATION", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "CERTIFICATE COPY OF MARKSHEET", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                    { n: "TRIPLICATE CERTIFICATE", d: "Aadhaar, Photo, All School Certificates, All Marksheets, Jk form with Sign" },
+                ]
+            },
+            {
+                category: "AUDIT",
+                items: [
+                    { n: "PAN AADHAAR LINK", d: "Pan Card, Aadhaar Card, Aadhaar linked Mobile number" },
+                    { n: "PAN NEW", d: "Aadhaar, Passport Size Photo(1+1(with sign)), Pan Form with sign, all in black pen, parents & Spouce name, Aadhaar linked mobile number" },
+                    { n: "PAN CORRECTION", d: "Aadhaar, Pan, Passport Size Photo(1+1(with sign)), Pan Correction Form with sign, Passport/Voter id, parents & Spouce name, Aadhaar linked mobile number" },
+                    { n: "PAN MINOR", d: "Applicant aadhaar, Parent's aadhaar, Parent's Photo(1+1(with sign)), Pan Form with parent's sign, Aadhaar linked mobile number" },
+                    { n: "PAN TRUST", d: "Aadhaar Card, Trust Seal, Registered Agreement deed," },
+                    { n: "PAN COMPANY", d: "Aadhaar Card, Company Seal, Registered Agreement Deed, Trade Licence" },
+                    { n: "PAN FIND OUT", d: "Aadhaar Card, Pan Card" },
+                    { n: "IT FILE", d: "Aadhaar Card, Pan Card, Bank Passbook" },
+                    { n: "GST REGISTRATION", d: "Aadhaar Card, Pan Card, EB bill, Rent Agreement, Property tax, Photo, Bank Passbook, Jk form with sign" },
+                    { n: "GST FILE MONTHLY", d: "Gst Certificate, Username, Passowrd, Bills" },
+                    { n: "GST FILE QUARTERLY", d: "Gst Certificate, Username, Passowrd, Bills" },
+                    { n: "EWAY BILL", d: "Aadhaar Card, Pan Card, Gst Certificate, Username, Password" },
+                ]
+            },
+            {
+                category: "CENTRAL GOVERNMENT",
+                items: [
+                    { n: "AADHAAR CORRECTION", d: "Sale Deed, Old Patta, Aadhaar, EC" },
+                    { n: "VOTER NEW", d: "Patta Number, Survey Number" },
+                    { n: "VOTER CORRECTION", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "VOTER MOBILE NUMBER LINK", d: "Aadhaar Number, Bank Passbook" },
+                    { n: "PF CLAIM", d: "Aadhaar Number, Bank Passbook" },
+                ]
+            },
+            {
+                category: "LEGAL",
+                items: [
+                    { n: "TELE LAW", d: " " },
+                    { n: "FIR", d: " " },
+                    { n: "LDR", d: " " },
+                    { n: "PVC", d: " " },
+                    { n: "CYBER COMPLAINT", d: " " },
+                    { n: "ECOURT", d: " " },
+                    { n: "NOTARY", d: " " },
+                    { n: "AFFIDAVIT", d: " " },
+                    { n: "BIRTH & DEATH RECOVER", d: " " },
+                    { n: "NEWS PAPER AD", d: " " },
+                    { n: "COVIN CERTIFICATE", d: " " },
+                ]
+            },
+            {
+                category: "License & Certificates",
+                items: [
+                    { n: "FSSAI STATE", d: " " },
+                    { n: "FSSAI CENTRAL", d: " " },
+                    { n: "MSME(UDYAM) REGISTRATION", d: " " },
+                    { n: "MSME(UDYAM) MODIFICATION", d: " " },
+                    { n: "TRADE LICENSE", d: " " },
+                    { n: "TRADE MARK", d: " " },
+                    { n: "ISO IAF", d: " " },
+                    { n: "ISO NON IAF", d: " " },
+                    { n: "IMPORT EXPORT(IE CODE)", d: " " },
+                    { n: "DIGITAL SIGN(DSC)", d: " " },
+                    { n: "COMBO DSC", d: " " },
+                    { n: "TENDER DSC", d: " " },
+                    { n: "AD CODE", d: " " },
+                    { n: "ICEGATE", d: " " },
+                    { n: "RCMC", d: " " },
+                    { n: "SPICE BOARD RCMC", d: " " },
+                    { n: "APEDA RCMC", d: " " },
+                    { n: "CAPEXIL RCMC", d: " " },
+                    { n: "FIEO RCMC", d: " " },
+                    { n: "IREPS RAILWAY", d: " " },
+                    { n: "PRIVATE LIMITED", d: " " },
+                    { n: "GMP", d: " " },
+                    { n: "LMPC", d: " " },
+                ]
+            }
+        ];
+
+        // ===== 2. GLOBAL STATES =====
+        let signState = { img: new Image(), isDrawing: false, startX: 0, startY: 0, rect: { x: 0, y: 0, w: 0, h: 0 } };
+        let cropState = { img: new Image(), isDrawing: false, startX: 0, startY: 0, rect: { x: 0, y: 0, w: 0, h: 0 } };
+        let idState = { side: 'front', frontImg: null, backImg: null, currImg: new Image(), rect: { x: 0, y: 0, w: 0, h: 0 }, isDrawing: false };
+        let compressionState = { pdf: null, file: null, currentPage: 1, compressedData: '', totalPages: 1 };
+        let ocrState = { pdf: null, file: null, currentPage: 1 };
+        const ID_RATIO = 1.585;
+        
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        const { jsPDF } = window.jspdf;
+
+        // ===== 3. INITIALIZATION =====
+        function initApp() {
+            const body = document.getElementById('listBody');
+            let totalServices = 0;
+            
+            body.innerHTML = serviceDatabase.map((cat, catIndex) => {
+                totalServices += cat.items.length;
+                
+                return `
+                    <div class="cat-group" id="cat-group-${catIndex}">
+                        <button class="cat-head" onclick="toggleCategory(${catIndex})">
+                            ${cat.category} 
+                            <span>▼</span>
+                        </button>
+                        <div class="cat-content" id="cat-content-${catIndex}">
+                            ${cat.items.map((item, itemIndex) => `
+                                <div class="item-row" id="item-${catIndex}-${itemIndex}">
+                                    <div class="item-info">
+                                        <span class="item-name">${item.n}</span>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-p" onclick="printService('${item.n}', '${item.d.replace(/'/g, "\\'")}')">PRINT</button>
+                                        <button class="btn btn-s" onclick="shareAsPDF('${item.n}', '${item.d.replace(/'/g, "\\'")}')">PDF</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('serviceCount').innerText = `${totalServices} Services Available`;
+        }
+
+        // ===== 4. UI FUNCTIONS =====
+        function toggleSidebar(show) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            if (show) {
+                sidebar.classList.add('active');
+                overlay.classList.add('active');
+            } else {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            }
+        }
+
+        function toggleCategory(index) {
+            const content = document.getElementById(`cat-content-${index}`);
+            content.classList.toggle('active');
+        }
+
+        // ===== 5. SEARCH FUNCTION =====
+        function smartSearch() {
+            const query = document.getElementById('search').value.toLowerCase().trim();
+            const keywords = query.split(' ').filter(k => k.length > 0);
+            
+            serviceDatabase.forEach((cat, catIndex) => {
+                const group = document.getElementById(`cat-group-${catIndex}`);
+                const content = document.getElementById(`cat-content-${catIndex}`);
+                
+                let hasAnyMatch = false;
+                let categoryMatch = keywords.length === 0 || 
+                    keywords.every(key => cat.category.toLowerCase().includes(key));
+                
+                // Check each item
+                cat.items.forEach((item, itemIndex) => {
+                    const itemEl = document.getElementById(`item-${catIndex}-${itemIndex}`);
+                    const itemText = item.n.toLowerCase();
+                    
+                    const itemMatch = keywords.length === 0 || 
+                        keywords.every(key => itemText.includes(key) || cat.category.toLowerCase().includes(key));
+                    
+                    if (itemMatch) {
+                        itemEl.style.display = 'flex';
+                        hasAnyMatch = true;
+                    } else {
+                        itemEl.style.display = 'none';
+                    }
+                });
+                
+                // Show/hide category group
+                if (query === '' || categoryMatch || hasAnyMatch) {
+                    group.style.display = 'block';
+                    if (query !== '' && (categoryMatch || hasAnyMatch)) {
+                        content.classList.add('active');
+                    } else if (query === '') {
+                        content.classList.remove('active');
+                    }
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        }
+
+        // ===== 6. PRINT & SHARE FUNCTIONS =====
+        function printService(name, docs) {
+            document.getElementById('pName').innerText = name;
+            document.getElementById('pDocs').innerHTML = 
+                docs.split(',').map(doc => `<li>${doc.trim()}</li>`).join('');
+            window.print();
+        }
+
+        async function shareAsPDF(name, docs) {
+            try {
+                const doc = new jsPDF({
+                    unit: 'mm',
+                    format: 'a5',
+                    orientation: 'portrait'
+                });
+                
+                // Header
+                doc.setFontSize(18);
+                doc.setTextColor(37, 99, 235);
+                doc.text("TN ESEVA", 105, 15, { align: 'center' });
+                
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text("Service Checklist", 105, 25, { align: 'center' });
+                
+                // Service Name
+                doc.setFontSize(14);
+                doc.text(`Service: ${name}`, 10, 40);
+                
+                // Required Documents
+                doc.setFontSize(12);
+                doc.text("Required Documents:", 10, 50);
+                
+                const splitDocs = doc.splitTextToSize(docs, 180);
+                doc.text(splitDocs, 10, 60);
+                
+                // Footer
+                doc.setFontSize(10);
+                doc.text("Phone: 8300181980", 105, 190, { align: 'center' });
+                
+                const pdfBlob = doc.output('blob');
+                const pdfFile = new File([pdfBlob], `${name}_Checklist.pdf`, { 
+                    type: "application/pdf" 
+                });
+                
+                // Try native sharing
+                if (navigator.share && navigator.canShare({ files: [pdfFile] })) {
+                    await navigator.share({
+                        files: [pdfFile],
+                        title: `${name} - Required Documents`,
+                        text: `Checklist for ${name} service`
+                    });
+                } else {
+                    // Fallback to WhatsApp
+                    const whatsappText = `*www.tneseva.net*\n\n*Service:* ${name}\n\n*Required Documents:*\n${docs.split(',').map(d => `• ${d.trim()}`).join('\n')}`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(whatsappText)}`, '_blank');
+                }
+            } catch (error) {
+                console.error('Error sharing PDF:', error);
+                alert('Error sharing document. Please try again.');
+            }
+        }
+
+        // ===== 7. ID CARD DUAL TOOL =====
+        async function initIDTool(e, side) {
+            const file = e.target.files[0];
+            if (!file) return;
+            idState.side = side;
+            document.getElementById('idUI').style.display = 'block';
+            document.getElementById('idLabel').innerText = side.toUpperCase() + " SIDE";
+
+            if (file.type === 'application/pdf') {
+                const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+                const page = await pdf.getPage(1);
+                const viewport = page.getViewport({ scale: 2 });
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = viewport.width; tempCanvas.height = viewport.height;
+                await page.render({ canvasContext: tempCanvas.getContext('2d'), viewport }).promise;
+                idState.currImg.src = tempCanvas.toDataURL();
+            } else {
+                idState.currImg.src = URL.createObjectURL(file);
+            }
+
+            idState.currImg.onload = () => {
+                const canvas = document.getElementById('idCanvas');
+                canvas.width = idState.currImg.width; canvas.height = idState.currImg.height;
+                canvas.getContext('2d').drawImage(idState.currImg, 0, 0);
+                setupIDLogic();
+            };
+        }
+
+        function setupIDLogic() {
+            const canvas = document.getElementById('idCanvas');
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scale = canvas.width / rect.width;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: (clientX - rect.left) * scale, y: (clientY - rect.top) * scale };
+            };
+            canvas.onmousedown = (e) => { const p = getPos(e); idState.isDrawing = true; idState.startX = p.x; idState.startY = p.y; };
+            canvas.onmousemove = (e) => {
+                if (!idState.isDrawing) return;
+                const p = getPos(e);
+                const rawW = p.x - idState.startX;
+                idState.rect = { x: idState.startX, y: idState.startY, w: rawW, h: rawW / ID_RATIO };
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(idState.currImg, 0, 0);
+                ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 6; ctx.strokeRect(idState.rect.x, idState.rect.y, idState.rect.w, idState.rect.h);
+            };
+            window.onmouseup = () => idState.isDrawing = false;
+        }
+
+        function saveIDSide() {
+            if (!idState.rect.w) return alert("Please select an area first");
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.abs(idState.rect.w); canvas.height = Math.abs(idState.rect.h);
+            canvas.getContext('2d').drawImage(idState.currImg, idState.rect.x, idState.rect.y, idState.rect.w, idState.rect.h, 0, 0, canvas.width, canvas.height);
+            if (idState.side === 'front') {
+                idState.frontImg = canvas.toDataURL('image/jpeg');
+                document.getElementById('sFront').innerHTML = "Front: ✅ Saved";
+            } else {
+                idState.backImg = canvas.toDataURL('image/jpeg');
+                document.getElementById('sBack').innerHTML = "Back: ✅ Saved";
+            }
+            if (idState.frontImg || idState.backImg) document.getElementById('idFinalBtns').style.display = 'flex';
+        }
+
+        function combineID(format) {
+            const finalCanvas = document.createElement('canvas');
+            const ctx = finalCanvas.getContext('2d');
+            if (format === 'A4') {
+                finalCanvas.width = 1654; finalCanvas.height = 2340; 
+                ctx.fillStyle = 'white'; ctx.fillRect(0,0,1654,2340);
+                const w = 700; const h = w / ID_RATIO;
+                if (idState.frontImg) { const f = new Image(); f.src = idState.frontImg; f.onload = () => ctx.drawImage(f, 100, 100, w, h); }
+                if (idState.backImg) { const b = new Image(); b.src = idState.backImg; b.onload = () => ctx.drawImage(b, 850, 100, w, h); }
+            } else {
+                finalCanvas.width = 1200; finalCanvas.height = 1800; 
+                ctx.fillStyle = 'white'; ctx.fillRect(0,0,1200,1800);
+                const w = 1100; const h = w / ID_RATIO;
+                if (idState.frontImg) { const f = new Image(); f.src = idState.frontImg; f.onload = () => ctx.drawImage(f, 50, 50, w, h); }
+                if (idState.backImg) { const b = new Image(); b.src = idState.backImg; b.onload = () => ctx.drawImage(b, 50, 50 + h + 50, w, h); }
+            }
+            setTimeout(() => {
+                const link = document.createElement('a'); link.download = `ID_Layout_${format}.jpg`;
+                link.href = finalCanvas.toDataURL('image/jpeg', 0.9); link.click();
+            }, 600);
+        }
+
+        function resetIDTool() {
+            idState = { side: 'front', frontImg: null, backImg: null, currImg: new Image(), rect: { x: 0, y: 0, w: 0, h: 0 }, isDrawing: false };
+            document.getElementById('sFront').innerHTML = "Front: ❌ Missing";
+            document.getElementById('sBack').innerHTML = "Back: ❌ Missing";
+            document.getElementById('idFinalBtns').style.display = 'none';
+        }
+
+        // ===== 8. SIGNATURE TOOL =====
+        function initSignTool(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                signState.img.onload = () => {
+                    const canvas = document.getElementById('signCanvas');
+                    canvas.width = signState.img.width; canvas.height = signState.img.height;
+                    canvas.getContext('2d').drawImage(signState.img, 0, 0);
+                    document.getElementById('signUI').style.display = 'block';
+                    setupSignLogic();
+                };
+                signState.img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setupSignLogic() {
+            const canvas = document.getElementById('signCanvas');
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+            };
+            canvas.onmousedown = (e) => { const p = getPos(e); signState.isDrawing = true; signState.startX = p.x; signState.startY = p.y; };
+            canvas.onmousemove = (e) => {
+                if (!signState.isDrawing) return;
+                const p = getPos(e);
+                signState.rect = { x: signState.startX, y: signState.startY, w: p.x - signState.startX, h: p.y - signState.startY };
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(signState.img, 0, 0);
+                ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 5; ctx.setLineDash([10]);
+                ctx.strokeRect(signState.rect.x, signState.rect.y, signState.rect.w, signState.rect.h);
+            };
+            window.onmouseup = () => signState.isDrawing = false;
+        }
+
+        function downloadSign() {
+            const canvas = document.createElement('canvas');
+            const r = signState.rect;
+            canvas.width = Math.abs(r.w); canvas.height = Math.abs(r.h);
+            canvas.getContext('2d').drawImage(signState.img, r.w > 0 ? r.x : r.x + r.w, r.h > 0 ? r.y : r.y + r.h, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+            const link = document.createElement('a'); link.download = 'signature.jpg'; link.href = canvas.toDataURL('image/jpeg'); link.click();
+        }
+
+        function resetSign() { document.getElementById('signCanvas').getContext('2d').drawImage(signState.img, 0, 0); }
+
+        // ===== 9. CROP TOOL =====
+        function initCropTool(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                cropState.img.onload = () => {
+                    const canvas = document.getElementById('cropCanvas');
+                    canvas.width = cropState.img.width; canvas.height = cropState.img.height;
+                    canvas.getContext('2d').drawImage(cropState.img, 0, 0);
+                    document.getElementById('cropUI').style.display = 'block';
+                    setupCropLogic();
+                };
+                cropState.img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setupCropLogic() {
+            const canvas = document.getElementById('cropCanvas');
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleX };
+            };
+            canvas.onmousedown = (e) => { const p = getPos(e); cropState.isDrawing = true; cropState.startX = p.x; cropState.startY = p.y; };
+            canvas.onmousemove = (e) => {
+                if (!cropState.isDrawing) return;
+                const p = getPos(e);
+                cropState.rect = { x: Math.min(p.x, cropState.startX), y: Math.min(p.y, cropState.startY), w: Math.abs(p.x - cropState.startX), h: Math.abs(p.y - cropState.startY) };
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(cropState.img, 0, 0);
+                ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.clearRect(cropState.rect.x, cropState.rect.y, cropState.rect.w, cropState.rect.h);
+                ctx.drawImage(cropState.img, cropState.rect.x, cropState.rect.y, cropState.rect.w, cropState.rect.h, cropState.rect.x, cropState.rect.y, cropState.rect.w, cropState.rect.h);
+                ctx.strokeStyle = '#eab308'; ctx.lineWidth = 4; ctx.strokeRect(cropState.rect.x, cropState.rect.y, cropState.rect.w, cropState.rect.h);
+            };
+            window.onmouseup = () => cropState.isDrawing = false;
+        }
+
+        function downloadCrop() {
+            const canvas = document.createElement('canvas');
+            canvas.width = cropState.rect.w; canvas.height = cropState.rect.h;
+            canvas.getContext('2d').drawImage(cropState.img, cropState.rect.x, cropState.rect.y, cropState.rect.w, cropState.rect.h, 0, 0, canvas.width, canvas.height);
+            const link = document.createElement('a'); link.download = 'cropped.jpg'; link.href = canvas.toDataURL('image/jpeg', 0.9); link.click();
+        }
+
+        function resetCrop() { document.getElementById('cropCanvas').getContext('2d').drawImage(cropState.img, 0, 0); cropState.rect = {x:0,y:0,w:0,h:0}; }
+
+        // ===== 10. COMPRESSION TOOL =====
+        function updateQualityValue() {
+            const quality = document.getElementById('quality').value;
+            document.getElementById('qualityValue').textContent = quality;
+        }
+
+        async function initCompTool(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            compressionState.file = file;
+            compressionState.currentPage = 1;
+            
+            document.getElementById('compUI').style.display = 'block';
+            updateQualityValue();
+            
+            if (file.type === 'application/pdf') {
+                try {
+                    compressionState.pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+                    compressionState.totalPages = compressionState.pdf.numPages;
+                    
+                    document.getElementById('compPgCtrl').style.display = 'flex';
+                    document.getElementById('compPgTotal').textContent = compressionState.totalPages;
+                    document.getElementById('compPgCur').textContent = 1;
+                } catch (error) {
+                    console.error('Error loading PDF:', error);
+                    alert('Error loading PDF file. Please try another file.');
+                    return;
+                }
+            } else {
+                compressionState.pdf = null;
+                document.getElementById('compPgCtrl').style.display = 'none';
+            }
+            
+            await updateCompression();
+        }
+
+        async function changeCompPage(delta) {
+            if (!compressionState.pdf) return;
+            
+            const newPage = compressionState.currentPage + delta;
+            if (newPage >= 1 && newPage <= compressionState.totalPages) {
+                compressionState.currentPage = newPage;
+                document.getElementById('compPgCur').textContent = newPage;
+                await updateCompression();
+            }
+        }
+
+        async function updateCompression() {
+            if (!compressionState.file) return;
+            
+            const quality = document.getElementById('quality').value / 100;
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            try {
+                if (compressionState.pdf) {
+                    // Handle PDF page
+                    const page = await compressionState.pdf.getPage(compressionState.currentPage);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    await page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    }).promise;
+                    
+                    document.getElementById('viewOrig').src = canvas.toDataURL('image/png');
+                } else {
+                    // Handle image file
+                    const img = new Image();
+                    img.src = URL.createObjectURL(compressionState.file);
+                    
+                    await new Promise((resolve) => {
+                        img.onload = resolve;
+                    });
+                    
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    
+                    document.getElementById('viewOrig').src = img.src;
+                }
+                
+                // Generate compressed version
+                compressionState.compressedData = canvas.toDataURL('image/jpeg', quality);
+                document.getElementById('viewNew').src = compressionState.compressedData;
+                
+                // Update size display
+                const sizeInKB = ((compressionState.compressedData.length - 22) * 3 / 4 / 1024).toFixed(1);
+                document.getElementById('szNew').textContent = `${sizeInKB} KB`;
+            } catch (error) {
+                console.error('Error during compression:', error);
+                alert('Error processing file. Please try again.');
+            }
+        }
+
+        function downloadJPG() {
+            if (!compressionState.compressedData) {
+                alert('Please upload and process a file first.');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.href = compressionState.compressedData;
+            link.download = 'JK_Compressed_Image.jpg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function downloadPDF() {
+            if (!compressionState.compressedData) {
+                alert('Please upload and process a file first.');
+                return;
+            }
+            
+            try {
+                const pdf = new jsPDF();
+                const imgProps = pdf.getImageProperties(compressionState.compressedData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                pdf.addImage(compressionState.compressedData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('JK_Compressed_Document.pdf');
+            } catch (error) {
+                console.error('Error creating PDF:', error);
+                alert('Error creating PDF. Please try again.');
+            }
+        }
+
+        // ===== 11. OCR TOOL =====
+        async function initOCRTool(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            ocrState.file = file;
+            document.getElementById('ocrUI').style.display = 'block';
+            document.getElementById('ocrStat').textContent = "Initializing OCR engine...";
+            document.getElementById('ocrBox').value = "";
+            
+            await runOCR();
+        }
+
+        async function runOCR() {
+            if (!ocrState.file) return;
+            
+            const statusElement = document.getElementById('ocrStat');
+            const resultElement = document.getElementById('ocrBox');
+            
+            try {
+                statusElement.textContent = "Processing...";
+                resultElement.value = "";
+                
+                const result = await Tesseract.recognize(
+                    ocrState.file,
+                    'eng+tam',
+                    {
+                        logger: progress => {
+                            if (progress.status === 'recognizing text') {
+                                const percent = Math.round(progress.progress * 100);
+                                statusElement.textContent = `Scanning: ${percent}%`;
+                            }
+                        }
+                    }
+                );
+                
+                resultElement.value = result.data.text;
+                statusElement.textContent = "Scanning complete!";
+            } catch (error) {
+                console.error('OCR Error:', error);
+                statusElement.textContent = "Error during scanning. Please try again.";
+                resultElement.value = "Error: Could not process the image. Please ensure it's clear and try again.";
+            }
+        }
+
+        function copyOCRText() {
+            const textarea = document.getElementById('ocrBox');
+            if (!textarea.value.trim()) {
+                alert('No text to copy.');
+                return;
+            }
+            
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    alert('Text copied to clipboard!');
+                } else {
+                    navigator.clipboard.writeText(textarea.value)
+                        .then(() => alert('Text copied to clipboard!'))
+                        .catch(() => alert('Failed to copy text.'));
+                }
+            } catch (err) {
+                navigator.clipboard.writeText(textarea.value)
+                    .then(() => alert('Text copied to clipboard!'))
+                    .catch(() => alert('Failed to copy text.'));
+            }
+        }
+
+        // ===== 12. HELPER FUNCTIONS =====
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function playSound() {
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
+        }
+
+        // ===== 13. INITIALIZE APPLICATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+            updateQualityValue();
+            
+            // PWA installation
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // Show install button
+                const installBtn = document.createElement('button');
+                installBtn.innerHTML = '📱 Install App';
+                installBtn.style.cssText = `
+                    position: fixed; bottom: 20px; left: 20px;
+                    background: #2563eb; color: white; padding: 10px 15px;
+                    border: none; border-radius: 20px; font-weight: bold;
+                    z-index: 1000; box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+                `;
+                installBtn.onclick = () => {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(() => {
+                        installBtn.remove();
+                    });
+                };
+                document.body.appendChild(installBtn);
+            });
+        });
+    </script>
+</body>
+</html>
